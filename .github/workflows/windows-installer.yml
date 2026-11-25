@@ -42,11 +42,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build installer
+        shell: pwsh
         env:
           NEXT_TELEMETRY_DISABLED: "1"
           RUST_BACKTRACE: short
           HUSKY: "0"
-        run: pnpm tauri build --target x86_64-pc-windows-msvc --bundles nsis --ci --no-sign --config '{"bundle":{"createUpdaterArtifacts":false}}' -- --locked
+        run: |
+          $configPath = Join-Path $env:RUNNER_TEMP "tauri-windows-build.json"
+          [System.IO.File]::WriteAllText($configPath, '{"bundle":{"createUpdaterArtifacts":false}}')
+          pnpm tauri build --target x86_64-pc-windows-msvc --bundles nsis --ci --no-sign --config $configPath -- --locked
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Create SHA-256 checksum
         shell: pwsh
